@@ -22,7 +22,7 @@ namespace Store_Roulette_CS2
     public class CS2Roulette : BasePlugin, IPluginConfig<CS2RouletteConfig>
     {
         public override string ModuleName => "StoreRoulette";
-        public override string ModuleVersion => "1.0.0";
+        public override string ModuleVersion => "1.0.1";
         public override string ModuleAuthor => "Kewaii";
         public override string ModuleDescription => "Store roulette ported for CS2";
         private int tickInterval = 15;
@@ -205,20 +205,19 @@ namespace Store_Roulette_CS2
                                 }
                             }
 
-                            Console.WriteLine(gifUrl);
                             if (PlayersSteps[player.SteamID] == maxSteps) {
 
                                 int creditsToGive = credits * multiplier;
                                 StringBuilder builder = new();
                                 if (multiplier > 0)
                                 {                                
-                                    builder.AppendFormat($"<img src=\"{gifUrl}\"></img><br><font color='green'>{Localizer["WonPrefix"]}{creditsToGive.ToString()}, {Localizer["Credits"]}</font>");
+                                    builder.AppendFormat($"<img src=\"{gifUrl}\"></img><br><font color='green'>{Localizer["WonPrefix"]} {creditsToGive.ToString()} {Localizer["Credits"]}</font>");
                                     player.PrintToCenterHtml(builder.ToString());
                                     if (storeApi != null) {
                                         storeApi.GivePlayerCredits(player, creditsToGive);
                                     }
                                 } else {
-                                    builder.AppendFormat($"<img src=\"{gifUrl}\"></img><br><font color='green'>{Localizer["LostPrefix"]}{creditsToGive.ToString()}, {Localizer["Credits"]}</font>");
+                                    builder.AppendFormat($"<img src=\"{gifUrl}\"></img><br><font color='green'>{Localizer["LostPrefix"]} {credits.ToString()} {Localizer["Credits"]}</font>");
                                     player.PrintToCenterHtml(builder.ToString());
                                 }
                                 PlayersBettingCredits.Remove(player.SteamID);
