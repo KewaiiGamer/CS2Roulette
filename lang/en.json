@@ -1,0 +1,9 @@
+{
+    "ChooseType": "Choose the type of bet",
+    "ChooseCredits": "Choose how many credits to bet",
+    "ChooseColor": "Choose the color you want to bet on",
+    "NoBalance": "You do not have enough credits to make this bet",
+    "WonPrefix": "Congrats. You won ",
+    "LostPrefix": "Damn it. You lost ",
+    "Credits": "credits"
+}

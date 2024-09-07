@@ -1,0 +1,9 @@
+{
+    "ChooseType": "Escolhe o tipo de aposta",
+    "ChooseCredits": "Escolhe quantos creditos queres apostar",
+    "ChooseColor": "Escolhe a cor na qual queres apostar",
+    "NoBalance": "Não tens creditos suficientes para fazer esta aposta.",
+    "WonPrefix": "Parabens. Ganhas ",
+    "LostPrefix": "Porra. Perdeste ",
+    "Credits": "creditos"
+}
