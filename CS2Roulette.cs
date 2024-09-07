@@ -1,20 +1,13 @@
 ﻿﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes;
-using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Commands;
-using CounterStrikeSharp.API.Modules.Timers;
-using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API.Core.Translations;
 using CounterStrikeSharp.API.Modules.Menu;
-using Microsoft.Extensions.Logging;
-using CSZoneNet.Plugin.Utils.Enums;
-using CounterStrikeSharp.API.Modules.Entities.Constants;
 using StoreApi;
-using CS2Roulette.Configs;
 using System.Text;
-using System.Text.Json.Serialization;
+using CS2Roulette.Configs;
 
 namespace Store_Roulette_CS2
 {
@@ -22,12 +15,11 @@ namespace Store_Roulette_CS2
     public class CS2Roulette : BasePlugin, IPluginConfig<CS2RouletteConfig>
     {
         public override string ModuleName => "StoreRoulette";
-        public override string ModuleVersion => "1.0.1";
+        public override string ModuleVersion => "1.0.2";
         public override string ModuleAuthor => "Kewaii";
         public override string ModuleDescription => "Store roulette ported for CS2";
         private int tickInterval = 15;
         private int currentTick = 0;
-        private int currentStep = 0;
         private int maxSteps = 15;
         private IStoreApi? storeApi;
 
@@ -37,7 +29,6 @@ namespace Store_Roulette_CS2
         private readonly List<string> _rouletteCommandAlias = new List<string>(){"roleta", "roulette"};
 
         public CS2RouletteConfig Config { get; set; } = new CS2RouletteConfig();
-        private bool _scrambleAfterWarmupDone = false;
 
         public override void OnAllPluginsLoaded(bool hotReload)
         {
@@ -45,10 +36,6 @@ namespace Store_Roulette_CS2
         }
         public void OnConfigParsed(CS2RouletteConfig config)
         {
-            if(config.Version < this.Config.Version) 
-            {
-                this.Logger?.LogWarning($"The plugin configuration is out of date. Consider updating the config. [Current Version: {config.Version} - Plugin Version: {this.Config.Version}]");
-            }
             this.Config = config;
         }
 
@@ -56,7 +43,7 @@ namespace Store_Roulette_CS2
         {
             foreach(var alias in this._rouletteCommandAlias)
             {
-                this.AddCommand(alias.StartsWith($"css_") ? alias : $"css_{alias}", "Base guns command for weapon allocation settings.", OnRoulette);
+                this.AddCommand(alias.StartsWith($"css_") ? alias : $"css_{alias}", "Roulette menu command", OnRoulette);
             }
             
             RegisterListener<Listeners.OnTick>(OnTick);
@@ -80,8 +67,10 @@ namespace Store_Roulette_CS2
                 MenuManager.CloseActiveMenu(player);
                 ShowRouletteQtyMenu(player, command, "vip");
             }, !AdminManager.PlayerHasPermissions(player, "@css/vip"));
-
-            MenuManager.OpenCenterHtmlMenu(this, player, menu);
+            if (player != null && player.IsValid)
+            {
+                MenuManager.OpenCenterHtmlMenu(this, player, menu);
+            }
         }               
 
         public void ShowRouletteQtyMenu(CCSPlayerController player, CommandInfo command, string option)
@@ -89,37 +78,46 @@ namespace Store_Roulette_CS2
             CenterHtmlMenu menu = new(Localizer["ChooseCredits"], this)
             {
             };
-            if (option.Equals("player")) 
+            
+            if (storeApi != null)
             {
-                foreach (var credits in this.Config.PlayerCreditsOptions)
+                if (option.Equals("player")) 
                 {
-                    
-                    StringBuilder builder = new();
-                    
-                    builder.AppendFormat(credits.ToString());
-                    
-                    menu.AddMenuOption(builder.ToString(), (player, newOption) =>
+                    foreach (var credits in this.Config.PlayerCreditsOptions)
                     {
-                        PlayersBettingCredits[player.SteamID] = credits;
-                        ShowRouletteColorMenu(player, command, credits);
-                    }, storeApi.GetPlayerCredits(player) < credits);
+                        if (credits > 0)
+                        {
+                            StringBuilder builder = new();
+                            
+                            builder.AppendFormat(credits.ToString());
+                            
+                            menu.AddMenuOption(builder.ToString(), (player, newOption) =>
+                            {
+                                PlayersBettingCredits[player.SteamID] = credits;
+                                ShowRouletteColorMenu(player, command, credits);
+                            }, storeApi.GetPlayerCredits(player) < credits);
+                        }
+                    }
                 }
-            }
-            else if (option.Equals("vip")) 
-            {
-                foreach (var credits in this.Config.VIPCreditsOptions)
+                else if (option.Equals("vip")) 
                 {
-                    
-                    Console.WriteLine(credits);
-                    StringBuilder builder = new();
-                    
-                    builder.AppendFormat(credits.ToString());
-                    
-                    menu.AddMenuOption(builder.ToString(), (player, newOption) =>
+                    foreach (var credits in this.Config.VIPCreditsOptions)
                     {
-                        PlayersBettingCredits[player.SteamID] = credits;
-                        ShowRouletteColorMenu(player, command, credits);
-                    }, storeApi.GetPlayerCredits(player) < credits);
+                        
+                        if (credits > 0)
+                        {
+                            Console.WriteLine(credits);
+                            StringBuilder builder = new();
+                            
+                            builder.AppendFormat(credits.ToString());
+                            
+                            menu.AddMenuOption(builder.ToString(), (player, newOption) =>
+                            {
+                                PlayersBettingCredits[player.SteamID] = credits;
+                                ShowRouletteColorMenu(player, command, credits);
+                            }, storeApi.GetPlayerCredits(player) < credits);
+                        }
+                    }
                 }
             }
             MenuManager.OpenCenterHtmlMenu(this, player, menu);
@@ -132,36 +130,39 @@ namespace Store_Roulette_CS2
             {
                 PostSelectAction = PostSelectAction.Close
             };
-            menu.AddMenuOption("Green", (player, newOption) =>
+            if (storeApi != null)
             {
-                            
-                if (storeApi.GetPlayerCredits(player) >= credits) {
-                    storeApi.GivePlayerCredits(player, -PlayersBettingCredits[player.SteamID]);
-                    PlayersBettingColor[player.SteamID] = "green";    
-                } else {
-                    player.PrintToCenterHtml(Localizer["NoBalance"]);
-                }
-            });
-            menu.AddMenuOption("Red", (player, newOption) =>
-            {
-                if (storeApi.GetPlayerCredits(player) >= credits) {
-                    storeApi.GivePlayerCredits(player, -PlayersBettingCredits[player.SteamID]);
-                    PlayersBettingColor[player.SteamID] = "red";    
-                } else {
-                    player.PrintToCenterHtml(Localizer["NoBalance"]);
-                }
-            });
-            
-            menu.AddMenuOption("Blue", (player, newOption) =>
-            {
-                if (storeApi.GetPlayerCredits(player) >= credits) {
-                    storeApi.GivePlayerCredits(player, -PlayersBettingCredits[player.SteamID]);
-                    PlayersBettingColor[player.SteamID] = "black";    
-                } else {
-                    player.PrintToCenterHtml(Localizer["NoBalance"]);
-                }
-            });
-            MenuManager.OpenCenterHtmlMenu(this, player, menu);
+                menu.AddMenuOption("Green", (player, newOption) =>
+                {
+                                
+                    if (storeApi.GetPlayerCredits(player) >= credits) {
+                        storeApi.GivePlayerCredits(player, -PlayersBettingCredits[player.SteamID]);
+                        PlayersBettingColor[player.SteamID] = "green";    
+                    } else {
+                        player.PrintToCenterHtml(Localizer["NoBalance"]);
+                    }
+                });
+                menu.AddMenuOption("Red", (player, newOption) =>
+                {
+                    if (storeApi.GetPlayerCredits(player) >= credits) {
+                        storeApi.GivePlayerCredits(player, -PlayersBettingCredits[player.SteamID]);
+                        PlayersBettingColor[player.SteamID] = "red";    
+                    } else {
+                        player.PrintToCenterHtml(Localizer["NoBalance"]);
+                    }
+                });
+                
+                menu.AddMenuOption("Blue", (player, newOption) =>
+                {
+                    if (storeApi.GetPlayerCredits(player) >= credits) {
+                        storeApi.GivePlayerCredits(player, -PlayersBettingCredits[player.SteamID]);
+                        PlayersBettingColor[player.SteamID] = "black";    
+                    } else {
+                        player.PrintToCenterHtml(Localizer["NoBalance"]);
+                    }
+                });
+                MenuManager.OpenCenterHtmlMenu(this, player, menu);
+            }
 
 
         }
