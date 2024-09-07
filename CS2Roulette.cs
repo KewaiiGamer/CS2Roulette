@@ -206,26 +206,27 @@ namespace Store_Roulette_CS2
                             }
 
                             Console.WriteLine(gifUrl);
-                            player.PrintToCenterHtml($"<img src=\"{gifUrl}\">");
                             if (PlayersSteps[player.SteamID] == maxSteps) {
 
                                 int creditsToGive = credits * multiplier;
                                 StringBuilder builder = new();
                                 if (multiplier > 0)
                                 {                                
-                                    builder.AppendFormat(Localizer["WonPrefix"], creditsToGive.ToString(), Localizer["Credits"]);
+                                    builder.AppendFormat($"<img src=\"{gifUrl}\"></img><br><font color='green'>{Localizer["WonPrefix"]}{creditsToGive.ToString()}, {Localizer["Credits"]}</font>");
                                     player.PrintToCenterHtml(builder.ToString());
                                     if (storeApi != null) {
                                         storeApi.GivePlayerCredits(player, creditsToGive);
                                     }
                                 } else {
-                                    
-                                    builder.AppendFormat(Localizer["LostPrefix"], creditsToGive.ToString(), Localizer["Credits"]);
+                                    builder.AppendFormat($"<img src=\"{gifUrl}\"></img><br><font color='green'>{Localizer["LostPrefix"]}{creditsToGive.ToString()}, {Localizer["Credits"]}</font>");
                                     player.PrintToCenterHtml(builder.ToString());
                                 }
                                 PlayersBettingCredits.Remove(player.SteamID);
                                 PlayersBettingColor.Remove(player.SteamID);                            
                                 PlayersSteps[player.SteamID] = 0;
+                            } else {
+                                
+                                player.PrintToCenterHtml($"<img src=\"{gifUrl}\">");
                             }
                         }
                         
