@@ -15,7 +15,7 @@ namespace Store_Roulette_CS2
     public class CS2Roulette : BasePlugin, IPluginConfig<CS2RouletteConfig>
     {
         public override string ModuleName => "CS2Roulette";
-        public override string ModuleVersion => "1.0.2";
+        public override string ModuleVersion => "1.0.3";
         public override string ModuleAuthor => "Kewaii";
         public override string ModuleDescription => "Store roulette ported for CS2";
         private int tickInterval = 15;
