@@ -14,7 +14,7 @@ namespace Store_Roulette_CS2
     [MinimumApiVersion(228)]
     public class CS2Roulette : BasePlugin, IPluginConfig<CS2RouletteConfig>
     {
-        public override string ModuleName => "StoreRoulette";
+        public override string ModuleName => "CS2Roulette";
         public override string ModuleVersion => "1.0.2";
         public override string ModuleAuthor => "Kewaii";
         public override string ModuleDescription => "Store roulette ported for CS2";
@@ -26,13 +26,12 @@ namespace Store_Roulette_CS2
 	    private static Dictionary<ulong, int> PlayersBettingCredits = [];
 	    private static Dictionary<ulong, string> PlayersBettingColor = [];
         private static Dictionary<ulong, int> PlayersSteps = [];
-        private readonly List<string> _rouletteCommandAlias = new List<string>(){"roleta", "roulette"};
 
         public CS2RouletteConfig Config { get; set; } = new CS2RouletteConfig();
 
         public override void OnAllPluginsLoaded(bool hotReload)
         {
-            storeApi = IStoreApi.Capability.Get();
+            storeApi = IStoreApi.Capability.Get() ?? throw new Exception("StoreApi not installed.");;
         }
         public void OnConfigParsed(CS2RouletteConfig config)
         {
@@ -41,7 +40,7 @@ namespace Store_Roulette_CS2
 
         public override void Load(bool hotReload)
         {
-            foreach(var alias in this._rouletteCommandAlias)
+            foreach(var alias in Config.RouletteCommandAliases)
             {
                 this.AddCommand(alias.StartsWith($"css_") ? alias : $"css_{alias}", "Roulette menu command", OnRoulette);
             }
@@ -156,7 +155,7 @@ namespace Store_Roulette_CS2
                 {
                     if (storeApi.GetPlayerCredits(player) >= credits) {
                         storeApi.GivePlayerCredits(player, -PlayersBettingCredits[player.SteamID]);
-                        PlayersBettingColor[player.SteamID] = "black";    
+                        PlayersBettingColor[player.SteamID] = "blue";    
                     } else {
                         player.PrintToCenterHtml(Localizer["NoBalance"]);
                     }
@@ -183,26 +182,26 @@ namespace Store_Roulette_CS2
                         {
                             PlayersSteps[player.SteamID]++;
                             Random rnd = new Random();
-                            int number = rnd.Next(0, 37);
+                            int number = rnd.Next(this.Config.RandomNumberStart, this.Config.RandomNumberEnd+1);
                             string gifUrl = "";
                             int multiplier = 0;
                             if (this.Config.RedNumbers.Contains(number)) {
                                 gifUrl = this.Config.RedImage;
                                 if (color.Equals("red"))
                                 {
-                                    multiplier = 2;
+                                    multiplier = this.Config.RedMultiplier;
                                 }
-                            } else if (this.Config.BlackNumbers.Contains(number)) {
-                                gifUrl = this.Config.BlackImage;
-                                if (color.Equals("black"))
+                            } else if (this.Config.BlueNumbers.Contains(number)) {
+                                gifUrl = this.Config.BlueImage;
+                                if (color.Equals("blue"))
                                 {
-                                    multiplier = 2;
+                                    multiplier = this.Config.BlueMultiplier;
                                 }
                             } else if (this.Config.GreenNumbers.Contains(number)) {
                                 gifUrl = this.Config.GreenImage;
                                 if (color.Equals("green"))
                                 {
-                                    multiplier = 10;
+                                    multiplier = this.Config.GreenMultiplier;
                                 }
                             }
 
